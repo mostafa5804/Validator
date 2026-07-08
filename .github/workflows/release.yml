@@ -1,0 +1,83 @@
+name: Android CI/CD & Auto Release 🚀
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers workflow when pushing a tag like v1.0.0
+  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+
+jobs:
+  build:
+    name: Build & Release Android App
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # Required for creating GitHub Releases
+
+    steps:
+      - name: Checkout Code 📂
+        uses: actions/checkout@v4
+
+      - name: Decode Debug Keystore 🔑
+        run: |
+          if [ -f "debug.keystore.base64" ]; then
+            echo "Decoding debug.keystore..."
+            base64 -d debug.keystore.base64 > debug.keystore
+            echo "✅ Debug keystore decoded."
+          else
+            echo "ℹ️ debug.keystore.base64 not found. Using default debug keystore."
+          fi
+
+      - name: Decode Release Keystore 🔑
+        run: |
+          if [ -n "${{ secrets.SIGNING_KEY }}" ]; then
+            echo "Decoding release keystore..."
+            echo "${{ secrets.SIGNING_KEY }}" | base64 -d > release.keystore
+            echo "✅ Release keystore decoded successfully."
+          else
+            echo "⚠️ SIGNING_KEY secret is not set. Release will be unsigned!"
+          fi
+
+      - name: Set up JDK 21 ☕
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Setup Gradle ⚙️
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+          validate-wrappers: false
+
+      - name: Build Debug/Release APKs & Bundle (AAB) 🛠️
+        run: gradle assembleDebug assembleRelease bundleRelease --stacktrace
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/release.keystore
+          STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Upload Build Artifacts to Actions Tab 📥
+        uses: actions/upload-artifact@v4
+        with:
+          name: ParsValidator-Release-Outputs
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          if-no-files-found: warn
+
+      - name: Create GitHub Release 📦
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+            app/build/outputs/bundle/release/*.aab
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

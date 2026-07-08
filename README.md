@@ -1,21 +1,76 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Pars Validator (پارس ولیدیتور) 🛡️
 
-# Run and deploy your AI Studio app
+**پارس ولیدیتور** یک اپلیکیشن مدرن اندرویدی برای اعتبارسنجی آفلاین، سریع و امن **شماره شبا**، **شماره کارت بانکی** و **کد ملی ایران** است.
+این برنامه بدون نیاز به دسترسی به اینترنت کار می‌کند و حریم خصوصی کاربران را به‌طور کامل تضمین می‌کند.
 
-This contains everything you need to run your app locally.
+---
 
-View your app in AI Studio: https://ai.studio/apps/8b07aea5-272c-4e98-9b9c-a3515f78f65f
+## 🌟 ویژگی‌ها
 
-## Run Locally
+- **اعتبارسنجی شماره کارت:** تشخیص صحت شماره کارت‌های ۱۶ رقمی و نمایش نام بانک صادرکننده.
+- **اعتبارسنجی شماره شبا (IBAN):** بررسی و تایید ساختار استاندارد شماره شبا و تشخیص وضعیت صحت آن.
+- **اعتبارسنجی کد ملی:** الگوریتم تشخیص درستی کد ملی بر اساس منطق استاندارد و نمایش شهر محل صدور.
+- **اسکنر بارکد و QR-Code:** قابلیت اسکن بارکدهای حاوی اطلاعات کارت یا شبا.
+- **پردازش امن و کاملاً آفلاین:** عدم نیاز به اتصال اینترنت برای اعتبارسنجی اطلاعات محرمانه.
+- **رابط کاربری مدرن:** طراحی بر اساس اصول Material Design 3، پشتیبانی از حالت شب و روز (Dark/Light Mode)، تنظیمات شخصی‌سازی و بازخورد لمسی (Haptic Feedback) ظریف.
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+---
 
+## 🚀 نحوه نصب و اجرای پروژه
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+### پیش‌نیازها
+- پشتیبانی از Java 21
+- ابزار Gradle 
+
+### نصب و بیلد به صورت دستی
+
+۱. دریافت کدهای پروژه:
+```bash
+git clone https://github.com/your-username/pars-validator.git
+cd pars-validator
+```
+
+۲. بیلد نسخه دیباگ:
+```bash
+gradle assembleDebug
+```
+پس از موفقیت‌آمیز بودن بیلد، فایل APK در مسیر `app/build/outputs/apk/debug/` قرار خواهد گرفت.
+
+---
+
+## 🛠️ سیستم انتشار خودکار (GitHub Actions CI/CD)
+
+این مخزن به سیستم **GitHub Actions** مجهز شده است تا هر زمان که نسخه‌ی جدیدی را Tag می‌زنید، به صورت خودکار خروجی‌های نهایی (APK و AAB) را ساخته و در بخش **Releases** گیت‌هاب منتشر کند.
+
+### مراحل ایجاد یک Release جدید و امضاشده (Signed)
+
+۱. کدهای خود را ثبت (Commit) و به گیت‌هاب ارسال (Push) کنید.
+۲. یک تگ جدید (به عنوان مثال `v1.0.0`) بسازید و آن را پوش کنید:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+۳. ورک‌فلوی گیت‌هاب اکشن به صورت خودکار شروع به کار کرده و فایل‌های زیر را در صفحه Release تولید می‌کند:
+- فایل `app-debug.apk`
+- فایل امضا شده `app-release.apk`
+- باندل امضا شده `app-release.aab` (برای استورها)
+
+> 🔒 **پیش‌نیاز تولید نسخه امضاشده (Signed Release):**
+> برای اینکه اپلیکیشن نهایی به درستی امضا شود، حتماً مقادیر زیر را در بخش **Settings > Secrets and variables > Actions** مخزن گیت‌هاب خود به عنوان Repository Secret اضافه کنید:
+> 1. `SIGNING_KEY`: محتوای Base64 فایل Keystore شما (می‌توانید با دستور `base64 -i my-upload-key.jks` آن را تولید کنید).
+> 2. `KEY_STORE_PASSWORD`: رمز عبور فایل Keystore.
+> 3. `KEY_PASSWORD`: رمز عبور Alias.
+
+در صورتی که مقادیر بالا در گیت‌هاب تنظیم نشوند، عملیات بیلد متوقف نمی‌شود اما فایل‌های Release امضا نشده (Unsigned) خواهند بود.
+
+---
+
+## 🤝 مشارکت
+
+اگر ایده‌ای برای بهبود عملکرد اپلیکیشن دارید یا خطایی (Bug) مشاهده کردید، خوشحال می‌شویم در بخش **Issues** آن را مطرح کنید و یا **Pull Request** ارسال نمایید. مشارکت شما باعث بهبود این ابزار خواهد شد.
+
+---
+
+## 📜 لایسنس
+
+این پروژه منبع‌باز بوده و برای هرگونه استفاده کاملا آزاد است.
