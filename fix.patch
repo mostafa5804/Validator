@@ -1,0 +1,12 @@
+--- app/src/main/java/com/example/ui/MainScreen.kt
++++ app/src/main/java/com/example/ui/MainScreen.kt
+@@ -393,6 +393,9 @@
+                         }
+                     }
+                 }
++            }
++        }
++    }
+                 
+                 Spacer(modifier = Modifier.height(24.dp))
+                 

@@ -1,0 +1,6 @@
+{
+  "name": "Pars Validator",
+  "description": "Offline application for Iranian Bank Card, Shaba, and National ID validation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

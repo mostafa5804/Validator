@@ -1,0 +1,637 @@
+1  package com.example.ui
+2  
+3  import android.content.ClipData
+4  import android.content.ClipboardManager
+5  import android.content.Context
+6  import android.widget.Toast
+7  import androidx.compose.animation.AnimatedVisibility
+8  import androidx.compose.foundation.Image
+9  import androidx.compose.foundation.background
+10  import androidx.compose.foundation.border
+11  import androidx.compose.foundation.clickable
+12  import androidx.compose.foundation.layout.*
+13  import androidx.compose.foundation.rememberScrollState
+14  import androidx.compose.foundation.shape.CircleShape
+15  import androidx.compose.foundation.shape.RoundedCornerShape
+16  import androidx.compose.foundation.text.KeyboardOptions
+17  import androidx.compose.foundation.verticalScroll
+18  import androidx.compose.material.icons.Icons
+19  import androidx.compose.material.icons.filled.Check
+20  import androidx.compose.material.icons.filled.Close
+21  import androidx.compose.material.icons.filled.ContentCopy
+22  import androidx.compose.material.icons.filled.ContentPaste
+23  import androidx.compose.material.icons.filled.Info
+24  import androidx.compose.material.icons.rounded.CreditCard
+25  import androidx.compose.material.icons.rounded.Numbers
+26  import androidx.compose.material.icons.rounded.Person
+27  import androidx.compose.material3.*
+28  import androidx.compose.runtime.*
+29  import androidx.compose.ui.Alignment
+30  import androidx.compose.ui.Modifier
+31  import androidx.compose.ui.draw.clip
+32  import androidx.compose.ui.draw.drawBehind
+33  import androidx.compose.ui.draw.shadow
+34  import androidx.compose.ui.graphics.Brush
+35  import androidx.compose.ui.graphics.Color
+36  import androidx.compose.ui.graphics.PathEffect
+37  import androidx.compose.ui.platform.LocalContext
+38  import androidx.compose.ui.platform.LocalLayoutDirection
+39  import androidx.compose.ui.res.painterResource
+40  import androidx.compose.ui.text.font.FontFamily
+41  import androidx.compose.ui.text.font.FontWeight
+42  import androidx.compose.ui.text.input.KeyboardType
+43  import androidx.compose.animation.AnimatedContent
+44  import androidx.compose.animation.fadeIn
+45  import androidx.compose.animation.fadeOut
+46  import androidx.compose.animation.with
+47  import androidx.compose.foundation.lazy.LazyColumn
+48  import androidx.compose.foundation.lazy.items
+49  import androidx.compose.material.icons.filled.Clear
+50  import androidx.compose.material.icons.rounded.History
+51  import androidx.compose.ui.text.input.VisualTransformation
+52  import androidx.compose.ui.text.input.OffsetMapping
+53  import androidx.compose.ui.text.AnnotatedString
+54  import androidx.compose.ui.text.input.TransformedText
+55  import com.example.data.history.AppDatabase
+56  import com.example.data.history.HistoryItem
+57  import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+58  import androidx.compose.ui.platform.LocalHapticFeedback
+59  import androidx.compose.runtime.LaunchedEffect
+60  import androidx.compose.ui.input.key.onKeyEvent
+61  import androidx.compose.ui.input.key.isCtrlPressed
+62  import androidx.compose.ui.input.key.key
+63  import androidx.compose.ui.input.key.Key
+64  
+65  @OptIn(ExperimentalMaterial3Api::class)
+66  @Composable
+67 1 fun MainScreen(cityRepository: CityRepository, historyDao: com.example.data.history.HistoryDao) {
+68 1     val context = LocalContext.current
+69 2     val viewModel: MainViewModel = viewModel { 
+70 2         MainViewModel(cityRepository, historyDao) 
+71 1     }
+72 1     val state by viewModel.state.collectAsState()
+73 1     val history by viewModel.history.collectAsState()
+74 1     val validCount by viewModel.validCount.collectAsState()
+75 1     val invalidCount by viewModel.invalidCount.collectAsState()
+76 1     var showAboutDialog by remember { mutableStateOf(false) }
+77 1     val haptic = LocalHapticFeedback.current
+78 1 
+79 2     LaunchedEffect(state.isValid) {
+80 3         if (state.isValid != null) {
+81 3             haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+82 2         }
+83 1     }
+84 1 
+85 2     if (showAboutDialog) {
+86 2         AlertDialog(
+87 2             onDismissRequest = { showAboutDialog = false },
+88 2             title = { Text("درباره برنامه", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth()) },
+89 3             text = {
+90 3                 Text(
+91 3                     text = "این برنامه جهت اعتبارسنجی آفلاین شماره کارت، شبا و کد ملی طراحی شده است. هیچ‌گونه اطلاعاتی در بستر اینترنت ارسال نمی‌شود.",
+92 3                     textAlign = TextAlign.Justify,
+93 3                     lineHeight = 24.sp
+94 3                 )
+95 2             },
+96 3             confirmButton = {
+97 4                 TextButton(onClick = { showAboutDialog = false }) {
+98 4                     Text("بستن", fontWeight = FontWeight.Bold, color = Color(0xFF1976D2))
+99 3                 }
+100 2             },
+101 2             containerColor = Color.White
+102 2         )
+103 1     }
+104 1 
+105 2     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
+106 2         Box(
+107 2             modifier = Modifier
+108 2                 .fillMaxSize()
+109 2                 .background(Color(0xFFF0F8FF))
+110 3         ) {
+111 3             // Background Header Gradient
+112 3             Box(
+113 3                 modifier = Modifier
+114 3                     .fillMaxWidth()
+115 3                     .height(320.dp)
+116 3                     .background(
+117 3                         brush = Brush.linearGradient(
+118 3                             colors = listOf(Color(0xFF2196F3), Color(0xFF4CAF50))
+119 3                         ),
+120 3                         shape = RoundedCornerShape(bottomStart = 40.dp, bottomEnd = 40.dp)
+121 3                     )
+122 3             )
+123 3 
+124 3             Column(
+125 3                 modifier = Modifier
+126 3                     .fillMaxSize()
+127 3                     .padding(horizontal = 24.dp)
+128 3                     .verticalScroll(rememberScrollState())
+129 4             ) {
+130 4                 Spacer(modifier = Modifier.height(48.dp))
+131 4                 // Custom Header
+132 4                 Row(
+133 4                     modifier = Modifier.fillMaxWidth(),
+134 4                     horizontalArrangement = Arrangement.SpaceBetween,
+135 4                     verticalAlignment = Alignment.CenterVertically
+136 5                 ) {
+137 5                     Text(
+138 5                         text = "اعتبارسنج",
+139 5                         color = Color.White,
+140 5                         fontSize = 24.sp,
+141 5                         fontWeight = FontWeight.Bold
+142 5                     )
+143 5                     Box(
+144 5                         modifier = Modifier
+145 5                             .size(48.dp)
+146 5                             .clip(RoundedCornerShape(16.dp))
+147 5                             .background(Color.White.copy(alpha = 0.2f))
+148 5                             .clickable { showAboutDialog = true },
+149 5                         contentAlignment = Alignment.Center
+150 6                     ) {
+151 6                         Icon(Icons.Default.Info, contentDescription = "درباره", tint = Color.White)
+152 5                     }
+153 4                 }
+154 4 
+155 4                 Spacer(modifier = Modifier.height(32.dp))
+156 4 
+157 4                 // Input Section (Glassmorphism look)
+158 4                 Box(
+159 4                     modifier = Modifier
+160 4                         .fillMaxWidth()
+161 4                         .background(Color.White.copy(alpha = 0.9f), RoundedCornerShape(24.dp))
+162 4                         .padding(20.dp)
+163 5                 ) {
+164 6                     Column {
+165 7                         TypeSelector(selectedType = state.type) {
+166 7                             viewModel.onTypeChanged(it)
+167 6                         }
+168 6 
+169 6                         Spacer(modifier = Modifier.height(24.dp))
+170 6 
+171 7                         val labelText = when (state.type) {
+172 7                             ValidationType.CARD -> "شماره ۱۶ رقمی کارت"
+173 7                             ValidationType.SHABA -> "شماره شبا (بدون IR)"
+174 7                             ValidationType.NATIONAL_ID -> "کد ملی (۱۰ رقمی)"
+175 6                         }
+176 6 
+177 6                         Text(
+178 6                             text = labelText,
+179 6                             color = Color(0xFF1E88E5),
+180 6                             fontSize = 12.sp,
+181 6                             fontWeight = FontWeight.Bold,
+182 6                             modifier = Modifier.padding(bottom = 8.dp, start = 8.dp)
+183 6                         )
+184 6 
+185 7                         val visualTransformation = when (state.type) {
+186 7                             ValidationType.CARD -> CardNumberTransformation()
+187 7                             ValidationType.SHABA -> ShabaTransformation()
+188 7                             ValidationType.NATIONAL_ID -> NationalIdTransformation()
+189 6                         }
+190 6 
+191 6                         OutlinedTextField(
+192 6                             value = state.input,
+193 7                             onValueChange = { 
+194 7                                 haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+195 7                                 viewModel.onInputChanged(it) 
+196 6                             },
+197 6                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+198 6                             visualTransformation = visualTransformation,
+199 7                             modifier = Modifier.fillMaxWidth().onKeyEvent { event ->
+200 8                                 if (event.isCtrlPressed && event.key == Key.Backspace) {
+201 8                                     viewModel.onInputChanged("")
+202 8                                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+203 8                                     true
+204 8                                 } else {
+205 8                                     false
+206 7                                 }
+207 6                             },
+208 6                             shape = RoundedCornerShape(16.dp),
+209 6                             singleLine = true,
+210 6                             textStyle = LocalTextStyle.current.copy(
+211 6                                 fontFamily = FontFamily.Monospace,
+212 6                                 fontSize = 18.sp,
+213 6                                 letterSpacing = 2.sp,
+214 6                                 color = Color(0xFF1A1C1E)
+215 6                             ),
+216 6                             colors = OutlinedTextFieldDefaults.colors(
+217 6                                 focusedBorderColor = Color(0xFF1E88E5),
+218 6                                 unfocusedBorderColor = Color(0xFFE0E0E0),
+219 6                                 focusedContainerColor = Color.White,
+220 6                                 unfocusedContainerColor = Color(0xFFF5F5F5),
+221 6                             ),
+222 7                             trailingIcon = {
+223 8                                 if (state.input.isEmpty()) {
+224 9                                     IconButton(onClick = {
+225 9                                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+226 10                                         if (clipboard.hasPrimaryClip() && clipboard.primaryClip?.itemCount!! > 0) {
+227 10                                             val text = clipboard.primaryClip?.getItemAt(0)?.text?.toString()
+228 11                                             if (text != null) {
+229 11                                                 viewModel.onInputChanged(text.replace(Regex("[^0-9]"), ""))
+230 10                                             }
+231 10                                         } else {
+232 10                                             Toast.makeText(context, "حافظه خالی است", Toast.LENGTH_SHORT).show()
+233 9                                         }
+234 9                                     }) {
+235 9                                         Icon(Icons.Default.ContentPaste, contentDescription = "جایگذاری", tint = Color(0xFF1E88E5))
+236 8                                     }
+237 8                                 } else {
+238 9                                     Row(verticalAlignment = Alignment.CenterVertically) {
+239 10                                         IconButton(onClick = { viewModel.onInputChanged("") }) {
+240 10                                             Icon(Icons.Default.Clear, contentDescription = "Clear", tint = Color.Gray)
+241 9                                         }
+242 10                                         if (state.isValid == true) {
+243 11                                             Box(modifier = Modifier.padding(end = 12.dp).size(24.dp).background(Color(0xFF4CAF50), CircleShape), contentAlignment = Alignment.Center) {
+244 11                                                 Icon(Icons.Default.Check, contentDescription = "Valid", tint = Color.White, modifier = Modifier.size(16.dp))
+245 10                                             }
+246 10                                         } else if (state.isValid == false) {
+247 11                                             Box(modifier = Modifier.padding(end = 12.dp).size(24.dp).background(Color(0xFFF44336), CircleShape), contentAlignment = Alignment.Center) {
+248 11                                                 Icon(Icons.Default.Close, contentDescription = "Invalid", tint = Color.White, modifier = Modifier.size(16.dp))
+249 10                                             }
+250 9                                         }
+251 8                                     }
+252 7                                 }
+253 6                             }
+254 6                         )
+255 5                     }
+256 4                 }
+257 4 
+258 4                             // Result Card
+259 5                 AnimatedVisibility(visible = state.isLoading || state.isValid != null) {
+260 5                     Column(
+261 5                         modifier = Modifier
+262 5                             .fillMaxWidth()
+263 5                             .background(Color.White, RoundedCornerShape(24.dp))
+264 5                             .padding(24.dp),
+265 5                         horizontalAlignment = Alignment.CenterHorizontally
+266 6                     ) {
+267 6                         AnimatedContent(
+268 6                             targetState = state.isLoading,
+269 6                             transitionSpec = { fadeIn() with fadeOut() }
+270 7                         ) { loading ->
+271 8                             if (loading) {
+272 9                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+273 9                                     CircularProgressIndicator(color = Color(0xFF1E88E5), modifier = Modifier.size(48.dp))
+274 9                                     Spacer(modifier = Modifier.height(16.dp))
+275 9                                     Text("در حال اعتبارسنجی...", fontSize = 16.sp, color = Color.Gray, fontWeight = FontWeight.Medium)
+276 8                                 }
+277 8                             } else {
+278 9                                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+279 10                         if (state.isValid == true) {
+280 11                             if (state.type == ValidationType.NATIONAL_ID) {
+281 11                                 Box(
+282 11                                     modifier = Modifier
+283 11                                         .size(80.dp)
+284 11                                         .background(Color(0xFFE8F5E9), CircleShape),
+285 11                                     contentAlignment = Alignment.Center
+286 12                                 ) {
+287 12                                     Icon(
+288 12                                         Icons.Rounded.Person,
+289 12                                         contentDescription = null,
+290 12                                         tint = Color(0xFF4CAF50),
+291 12                                         modifier = Modifier.size(48.dp)
+292 12                                     )
+293 11                                 }
+294 11                                 Spacer(modifier = Modifier.height(16.dp))
+295 11                                 Text(
+296 11                                     text = "کد ملی معتبر است",
+297 11                                     fontSize = 20.sp,
+298 11                                     fontWeight = FontWeight.Bold,
+299 11                                     color = Color(0xFF2E7D32)
+300 11                                 )
+301 12                                 if (state.city != null) {
+302 12                                     Spacer(modifier = Modifier.height(8.dp))
+303 12                                     Text(
+304 12                                         text = "صادره از: ${state.city}",
+305 12                                         fontSize = 16.sp,
+306 12                                         color = Color(0xFF1A1C1E),
+307 12                                         fontWeight = FontWeight.Medium
+308 12                                     )
+309 11                                 }
+310 11                             } else if (state.bankInfo != null) {
+311 12                                 if (state.bankInfo!!.logoResId != null) {
+312 12                                     Image(
+313 12                                         painter = painterResource(id = state.bankInfo!!.logoResId!!),
+314 12                                         contentDescription = "Bank Logo",
+315 12                                         modifier = Modifier
+316 12                                             .size(80.dp)
+317 12                                             .clip(RoundedCornerShape(20.dp))
+318 12                                             .background(Color.White)
+319 12                                             .padding(4.dp)
+320 12                                     )
+321 12                                 } else {
+322 12                                     Box(
+323 12                                         modifier = Modifier
+324 12                                             .size(80.dp)
+325 12                                             .background(state.bankInfo!!.color, RoundedCornerShape(20.dp)),
+326 12                                         contentAlignment = Alignment.Center
+327 13                                     ) {
+328 13                                         Text(
+329 13                                             text = state.bankInfo!!.bankName.take(3),
+330 13                                             color = Color.White,
+331 13                                             fontWeight = FontWeight.Black,
+332 13                                             fontSize = 20.sp
+333 13                                         )
+334 12                                     }
+335 11                                 }
+336 11                                 Spacer(modifier = Modifier.height(16.dp))
+337 11                                 Text(
+338 11                                     text = "اطلاعات معتبر است",
+339 11                                     fontSize = 20.sp,
+340 11                                     fontWeight = FontWeight.Bold,
+341 11                                     color = Color(0xFF2E7D32)
+342 11                                 )
+343 11                                 Spacer(modifier = Modifier.height(8.dp))
+344 11                                 Text(
+345 11                                     text = "بانک ${state.bankInfo!!.bankName}",
+346 11                                     fontSize = 16.sp,
+347 11                                     color = Color(0xFF1A1C1E),
+348 11                                     fontWeight = FontWeight.Medium
+349 11                                 )
+350 10                             }
+351 10                         } else {
+352 10                             Box(
+353 10                                 modifier = Modifier
+354 10                                     .size(80.dp)
+355 10                                     .background(Color(0xFFFFEBEE), CircleShape),
+356 10                                 contentAlignment = Alignment.Center
+357 11                             ) {
+358 11                                 Icon(
+359 11                                     Icons.Default.Close,
+360 11                                     contentDescription = null,
+361 11                                     tint = Color(0xFFD32F2F),
+362 11                                     modifier = Modifier.size(48.dp)
+363 11                                 )
+364 10                             }
+365 10                             Spacer(modifier = Modifier.height(16.dp))
+366 10                             Text(
+367 10                                 text = "خطا در اعتبارسنجی",
+368 10                                 fontSize = 20.sp,
+369 10                                 fontWeight = FontWeight.Bold,
+370 10                                 color = Color(0xFFD32F2F)
+371 10                             )
+372 10                             Spacer(modifier = Modifier.height(12.dp))
+373 10                             Text(
+374 10                                 text = state.message,
+375 10                                 fontSize = 15.sp,
+376 10                                 color = Color(0xFF1A1C1E),
+377 10                                 fontWeight = FontWeight.Medium,
+378 10                                 textAlign = TextAlign.Center,
+379 10                                 modifier = Modifier
+380 10                                     .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+381 10                                     .padding(horizontal = 16.dp, vertical = 12.dp)
+382 10                                     .fillMaxWidth()
+383 10                             )
+384 9                         }
+385 9 
+386 10                         if (state.isValid == true) {
+387 10                             Spacer(modifier = Modifier.height(24.dp))
+388 10                             Button(
+389 11                                 onClick = {
+390 11                                     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+391 12                                     val textToCopy = buildString {
+392 13                                         append("نوع: ${
+393 14                                             when (state.type) {
+394 14                                                 ValidationType.CARD -> "شماره کارت"
+395 14                                                 ValidationType.SHABA -> "شماره شبا"
+396 14                                                 ValidationType.NATIONAL_ID -> "کد ملی"
+397 13                                             }
+398 12                                         }\n")
+399 12                                         append("مقدار: ${state.input}\n")
+400 12                                         if (state.bankInfo != null) append("بانک: ${state.bankInfo!!.bankName}\n")
+401 12                                         if (state.city != null) append("شهر: ${state.city}\n")
+402 12                                         append("وضعیت: معتبر")
+403 11                                     }
+404 11                                     val clip = ClipData.newPlainText("Validation Result", textToCopy)
+405 11                                     clipboard.setPrimaryClip(clip)
+406 11                                     Toast.makeText(context, "در کلیپ‌بورد کپی شد", Toast.LENGTH_SHORT).show()
+407 10                                 },
+408 10                                 modifier = Modifier
+409 10                                     .fillMaxWidth()
+410 10                                     .height(56.dp),
+411 10                                 shape = RoundedCornerShape(16.dp),
+412 10                                 colors = ButtonDefaults.buttonColors(
+413 10                                     containerColor = Color(0xFFE3F2FD),
+414 10                                     contentColor = Color(0xFF1976D2)
+415 10                                 )
+416 11                             ) {
+417 11                                 Icon(Icons.Default.ContentCopy, contentDescription = null, modifier = Modifier.size(20.dp))
+418 11                                 Spacer(modifier = Modifier.width(8.dp))
+419 11                                 Text("کپی نتیجه", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+420 10                             }
+421 9                         }
+422 8                     }
+423 7                 }
+424 6             }
+425 5         }
+426 4     }
+427 4                 
+428 4     Spacer(modifier = Modifier.height(24.dp))
+429 4                 
+430 5                 if (validCount > 0 || invalidCount > 0) {
+431 5                     StatsSection(validCount, invalidCount)
+432 5                     Spacer(modifier = Modifier.height(24.dp))
+433 4                 }
+434 4                 
+435 5                 if (history.isNotEmpty()) {
+436 5                     HistorySection(history, context)
+437 5                     Spacer(modifier = Modifier.height(48.dp))
+438 4                 }
+439 3             }
+440 2         }
+441 1     }
+442 0 }
+443 0 
+444 0 @Composable
+445 1 fun TypeSelector(selectedType: ValidationType, onTypeSelected: (ValidationType) -> Unit) {
+446 1     Row(
+447 1         modifier = Modifier
+448 1             .fillMaxWidth()
+449 1             .background(Color(0xFFF5F5F5), RoundedCornerShape(16.dp))
+450 1             .padding(4.dp),
+451 1         horizontalArrangement = Arrangement.SpaceBetween
+452 2     ) {
+453 2         TypeButton(
+454 2             title = "شماره کارت",
+455 2             icon = Icons.Rounded.CreditCard,
+456 2             isSelected = selectedType == ValidationType.CARD,
+457 2             onClick = { onTypeSelected(ValidationType.CARD) },
+458 2             modifier = Modifier.weight(1f)
+459 2         )
+460 2         TypeButton(
+461 2             title = "شماره شبا",
+462 2             icon = Icons.Rounded.Numbers,
+463 2             isSelected = selectedType == ValidationType.SHABA,
+464 2             onClick = { onTypeSelected(ValidationType.SHABA) },
+465 2             modifier = Modifier.weight(1f)
+466 2         )
+467 2         TypeButton(
+468 2             title = "کد ملی",
+469 2             icon = Icons.Rounded.Person,
+470 2             isSelected = selectedType == ValidationType.NATIONAL_ID,
+471 2             onClick = { onTypeSelected(ValidationType.NATIONAL_ID) },
+472 2             modifier = Modifier.weight(1f)
+473 2         )
+474 1     }
+475 0 }
+476 0 
+477 0 @Composable
+478 0 fun TypeButton(
+479 0     title: String,
+480 0     icon: androidx.compose.ui.graphics.vector.ImageVector,
+481 0     isSelected: Boolean,
+482 0     onClick: () -> Unit,
+483 0     modifier: Modifier = Modifier
+484 1 ) {
+485 1     val containerColor = if (isSelected) Color.White else Color.Transparent
+486 1     val contentColor = if (isSelected) Color(0xFF1976D2) else Color(0xFF757575)
+487 1 
+488 1     Box(
+489 1         modifier = modifier
+490 1             .height(48.dp)
+491 1             .then(
+492 1                 if (isSelected) Modifier.shadow(4.dp, RoundedCornerShape(12.dp))
+493 1                 else Modifier
+494 1             )
+495 1             .background(containerColor, RoundedCornerShape(12.dp))
+496 1             .clickable { onClick() },
+497 1         contentAlignment = Alignment.Center
+498 2     ) {
+499 3         Row(verticalAlignment = Alignment.CenterVertically) {
+500 3             Icon(icon, contentDescription = null, modifier = Modifier.size(16.dp), tint = contentColor)
+501 3             Spacer(modifier = Modifier.width(4.dp))
+502 3             Text(
+503 3                 text = title,
+504 3                 fontSize = 11.sp,
+505 3                 fontWeight = FontWeight.Bold,
+506 3                 color = contentColor
+507 3             )
+508 2         }
+509 1     }
+510 0 }
+511 0 
+512 0 @Composable
+513 1 fun StatsSection(validCount: Int, invalidCount: Int) {
+514 1     Column(
+515 1         modifier = Modifier
+516 1             .fillMaxWidth()
+517 1             .background(Color.White, RoundedCornerShape(24.dp))
+518 1             .padding(24.dp)
+519 2     ) {
+520 2         Text(
+521 2             text = "آمار نشست فعلی",
+522 2             fontSize = 18.sp,
+523 2             fontWeight = FontWeight.Bold,
+524 2             color = Color(0xFF1A1C1E)
+525 2         )
+526 2         Spacer(modifier = Modifier.height(16.dp))
+527 2         Row(
+528 2             modifier = Modifier.fillMaxWidth(),
+529 2             horizontalArrangement = Arrangement.spacedBy(16.dp)
+530 3         ) {
+531 3             Box(
+532 3                 modifier = Modifier
+533 3                     .weight(1f)
+534 3                     .background(Color(0xFFE8F5E9), RoundedCornerShape(16.dp))
+535 3                     .padding(16.dp),
+536 3                 contentAlignment = Alignment.Center
+537 4             ) {
+538 5                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+539 5                     Text("معتبر", fontSize = 14.sp, color = Color(0xFF2E7D32))
+540 5                     Text("$validCount", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFF2E7D32))
+541 4                 }
+542 3             }
+543 3             Box(
+544 3                 modifier = Modifier
+545 3                     .weight(1f)
+546 3                     .background(Color(0xFFFFEBEE), RoundedCornerShape(16.dp))
+547 3                     .padding(16.dp),
+548 3                 contentAlignment = Alignment.Center
+549 4             ) {
+550 5                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
+551 5                     Text("نامعتبر", fontSize = 14.sp, color = Color(0xFFD32F2F))
+552 5                     Text("$invalidCount", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFD32F2F))
+553 4                 }
+554 3             }
+555 2         }
+556 1     }
+557 0 }
+558 0 
+559 0 @Composable
+560 1 fun HistorySection(history: List<HistoryItem>, context: android.content.Context) {
+561 1     Column(
+562 1         modifier = Modifier
+563 1             .fillMaxWidth()
+564 1             .background(Color.White, RoundedCornerShape(24.dp))
+565 1             .padding(24.dp)
+566 2     ) {
+567 2         Row(
+568 2             modifier = Modifier.fillMaxWidth(),
+569 2             horizontalArrangement = Arrangement.SpaceBetween,
+570 2             verticalAlignment = Alignment.CenterVertically
+571 3         ) {
+572 3             Text(
+573 3                 text = "تاریخچه اخیر",
+574 3                 fontSize = 18.sp,
+575 3                 fontWeight = FontWeight.Bold,
+576 3                 color = Color(0xFF1A1C1E)
+577 3             )
+578 4             TextButton(onClick = { exportToCsv(context, history) }) {
+579 4                 Text("خروجی CSV", fontWeight = FontWeight.Bold)
+580 3             }
+581 2         }
+582 2         Spacer(modifier = Modifier.height(16.dp))
+583 3         history.forEach { item ->
+584 3             Row(
+585 3                 modifier = Modifier
+586 3                     .fillMaxWidth()
+587 3                     .padding(vertical = 8.dp)
+588 3                     .background(Color(0xFFF5F5F5), RoundedCornerShape(12.dp))
+589 3                     .padding(16.dp),
+590 3                 horizontalArrangement = Arrangement.SpaceBetween,
+591 3                 verticalAlignment = Alignment.CenterVertically
+592 4             ) {
+593 5                 Column {
+594 5                     Text(
+595 6                         text = when (item.type) {
+596 6                             ValidationType.CARD -> "شماره کارت"
+597 6                             ValidationType.SHABA -> "شماره شبا"
+598 6                             ValidationType.NATIONAL_ID -> "کد ملی"
+599 5                         },
+600 5                         fontSize = 12.sp,
+601 5                         color = Color.Gray
+602 5                     )
+603 5                     Spacer(modifier = Modifier.height(4.dp))
+604 5                     Text(
+605 5                         text = item.input,
+606 5                         fontSize = 16.sp,
+607 5                         fontWeight = FontWeight.Medium,
+608 5                         color = Color(0xFF1A1C1E),
+609 5                         fontFamily = FontFamily.Monospace
+610 5                     )
+611 4                 }
+612 3             }
+613 2         }
+614 1     }
+615 0 }
+616 0 
+617 1 fun exportToCsv(context: android.content.Context, history: List<HistoryItem>) {
+618 1     val csv = java.lang.StringBuilder()
+619 1     csv.append("\uFEFF") // UTF-8 BOM for Excel support
+620 1     csv.append("Type,Input\n")
+621 2     for (item in history) {
+622 3         val typeStr = when (item.type) {
+623 3             ValidationType.CARD -> "Card"
+624 3             ValidationType.SHABA -> "Shaba"
+625 3             ValidationType.NATIONAL_ID -> "National ID"
+626 2         }
+627 2         csv.append("$typeStr,${item.input}\n")
+628 1     }
+629 1     
+630 2     val sendIntent = android.content.Intent().apply {
+631 2         action = android.content.Intent.ACTION_SEND
+632 2         putExtra(android.content.Intent.EXTRA_TEXT, csv.toString())
+633 2         type = "text/csv"
+634 1     }
+635 1     val shareIntent = android.content.Intent.createChooser(sendIntent, "صدور به CSV")
+636 1     context.startActivity(shareIntent)
+637 0 }
