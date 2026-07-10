@@ -24,6 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -904,42 +905,56 @@ fun SmartDetectorTab(
     }
 }
 
-// Emulators Brushes
-fun getCardBrush(bankInfo: BankInfo?): Brush {
-    if (bankInfo == null) {
-        return Brush.linearGradient(colors = listOf(Color(0xFF334155), Color(0xFF1E293B)))
-    }
-    val base = bankInfo.color
-    return Brush.linearGradient(colors = listOf(base.copy(alpha = 0.85f), base, Color(0xFF0F172A)))
-}
-
 @Composable
 fun CardEmulator(cleanInput: String, bankInfo: BankInfo?, isDarkMode: Boolean) {
     val displayNum = cleanInput.padEnd(16, '•')
     val formatted = "${displayNum.substring(0,4)}  ${displayNum.substring(4,8)}  ${displayNum.substring(8,12)}  ${displayNum.substring(12,16)}"
+
+    val bgBrush = if (bankInfo == null) {
+        if (isDarkMode) Brush.linearGradient(colors = listOf(Color(0xFF334155), Color(0xFF1E293B)))
+        else Brush.linearGradient(colors = listOf(Color(0xFF64748B), Color(0xFF334155)))
+    } else {
+        val base = bankInfo.color
+        Brush.linearGradient(colors = listOf(base.copy(alpha = 0.85f), base, Color(0xFF0F172A)))
+    }
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 200.dp)
             .aspectRatio(1.586f)
-            .clip(RoundedCornerShape(20.dp))
-            .background(getCardBrush(bankInfo))
-            .padding(16.dp)
             .shadow(12.dp, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgBrush)
     ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            drawCircle(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color.White.copy(alpha = 0.15f), Color.Transparent),
+                    center = Offset(size.width + 100f, -100f),
+                    radius = size.width * 0.8f
+                )
+            )
+        }
+        
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp), 
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
             // Card Header
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
-                    Text("کارت عضو شتاب", fontSize = 8.sp, color = Color.White.copy(alpha = 0.6f))
-                    Text(bankInfo?.bankName ?: "بانک ناشناس", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("کارت عضو شتاب", fontSize = 9.sp, color = Color.White.copy(alpha = 0.7f), letterSpacing = 1.sp)
+                    Text(bankInfo?.bankName ?: "صادرکننده ناشناس", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 }
                 Box(
                     modifier = Modifier
-                        .size(36.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(Color.White.copy(alpha = 0.15f))
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color.White.copy(alpha = 0.1f))
+                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -954,20 +969,28 @@ fun CardEmulator(cleanInput: String, bankInfo: BankInfo?, isDarkMode: Boolean) {
             // Golden Chip
             Box(
                 modifier = Modifier
-                    .size(28.dp, 20.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(Brush.linearGradient(colors = listOf(Color(0xFFFCD34D), Color(0xFFF59E0B))))
-                    .border(0.5.dp, Color(0xFFD97706), RoundedCornerShape(4.dp))
-            )
+                    .size(36.dp, 28.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Brush.linearGradient(colors = listOf(Color(0xFFFBBF24), Color(0xFFFEF08A))))
+                    .border(1.dp, Color(0xFFFCD34D), RoundedCornerShape(6.dp))
+                    .padding(4.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(verticalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxSize()) {
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFF92400E).copy(alpha = 0.3f))
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFF92400E).copy(alpha = 0.3f))
+                    HorizontalDivider(thickness = 1.dp, color = Color(0xFF92400E).copy(alpha = 0.3f))
+                }
+            }
 
             // Number Display
             Text(
                 text = formatted,
                 fontFamily = FontFamily.Monospace,
-                fontWeight = FontWeight.Black,
-                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
                 color = Color.White,
-                letterSpacing = 1.sp,
+                letterSpacing = 2.sp,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
@@ -975,17 +998,17 @@ fun CardEmulator(cleanInput: String, bankInfo: BankInfo?, isDarkMode: Boolean) {
             // Footer info
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
                 Column {
-                    Text("دارنده کارت", fontSize = 7.sp, color = Color.White.copy(alpha = 0.5f))
-                    Text("کاربر شتاب", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                    Text("دارنده کارت", fontSize = 8.sp, color = Color.White.copy(alpha = 0.5f))
+                    Text("کاربر شتاب", fontSize = 12.sp, fontWeight = FontWeight.Medium, color = Color.White)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Text("CVV2", fontSize = 7.sp, color = Color.White.copy(alpha = 0.5f))
-                        Text("***", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color.White)
+                        Text("***", fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color.White)
                     }
                     Column(horizontalAlignment = Alignment.End) {
                         Text("انقضا", fontSize = 7.sp, color = Color.White.copy(alpha = 0.5f))
-                        Text("۱۴۱۲/۱۲", fontSize = 10.sp, fontFamily = FontFamily.Monospace, color = Color.White)
+                        Text("۱۴۱۲/۱۲", fontSize = 12.sp, fontFamily = FontFamily.Monospace, color = Color.White)
                     }
                 }
             }
@@ -996,16 +1019,14 @@ fun CardEmulator(cleanInput: String, bankInfo: BankInfo?, isDarkMode: Boolean) {
 @Composable
 fun MelliEmulator(cleanInput: String, cityOfIssue: String?, isDarkMode: Boolean) {
     val displayNum = cleanInput.padEnd(10, '•')
-    val formatted = if (displayNum.length >= 10) {
-        "${displayNum.substring(0,3)}-${displayNum.substring(3,9)}-${displayNum.substring(9,10)}"
-    } else displayNum
+    val formatted = if (displayNum.length >= 10) displayNum else displayNum
 
     val melliBg = if (isDarkMode) {
-        Brush.linearGradient(colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A)))
+        Brush.linearGradient(colors = listOf(Color(0xFF1E293B), Color(0xFF0F172A))) 
     } else {
-        Brush.linearGradient(colors = listOf(Color(0xFFF0F9FF), Color(0xFFE0F2FE), Color(0xFFBAE6FD)))
+        Brush.linearGradient(colors = listOf(Color(0xFFE0F2FE), Color(0xFFF0F9FF), Color(0xFFBFDBFE))) 
     }
-    val textColor = if (isDarkMode) Color.White else Color(0xFF0F172A)
+    val textColor = if (isDarkMode) Color.White else Color(0xFF1E293B)
     val secondaryTextColor = if (isDarkMode) Color(0xFF94A3B8) else Color(0xFF64748B)
 
     Box(
@@ -1013,66 +1034,87 @@ fun MelliEmulator(cleanInput: String, cityOfIssue: String?, isDarkMode: Boolean)
             .fillMaxWidth()
             .heightIn(max = 200.dp)
             .aspectRatio(1.586f)
+            .shadow(12.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(melliBg)
-            .border(1.dp, if (isDarkMode) Color(0xFF334155) else Color(0xFF93C5FD), RoundedCornerShape(20.dp))
-            .padding(12.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp))
+            .border(1.dp, if (isDarkMode) Color(0xFF334155) else Color(0xFFE2E8F0), RoundedCornerShape(20.dp))
     ) {
         // Iranian flag stripe on top left
         Box(
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .size(70.dp, 3.dp)
-                .background(
-                    Brush.linearGradient(
-                        colors = listOf(Color(0xFF10B981), Color.White, Color(0xFFEF4444))
-                    )
-                )
+                .size(96.dp, 6.dp)
+                .background(Brush.linearGradient(colors = listOf(Color(0xFF22C55E), Color.White, Color(0xFFEF4444))))
         )
 
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column(modifier = Modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
-                    Text("جمهوری اسلامی ایران", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = textColor)
-                    Text("کارت هوشمند ملی", fontSize = 7.sp, color = textColor.copy(alpha = 0.6f))
+                    Text("جمهوری اسلامی ایران", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = if (isDarkMode) Color(0xFFCBD5E1) else Color(0xFF475569))
+                    Text("کارت هوشمند ملی", fontSize = 8.sp, color = secondaryTextColor)
                 }
-                Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(16.dp), tint = Color(0xFF3B82F6))
+                Box(
+                    modifier = Modifier.size(20.dp).background(Color(0xFF6366F1).copy(alpha = 0.1f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Rounded.Shield, contentDescription = null, modifier = Modifier.size(12.dp), tint = Color(0xFF6366F1))
+                }
             }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 // User Avatar placeholder
                 Box(
                     modifier = Modifier
-                        .size(50.dp, 60.dp)
+                        .size(56.dp, 64.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isDarkMode) Color(0xFF334155) else Color(0xFFE2E8F0)),
+                        .background(if (isDarkMode) Color(0xFF0F172A) else Color(0xFFE2E8F0).copy(alpha = 0.8f))
+                        .border(1.dp, if (isDarkMode) Color(0xFF1E293B) else Color(0xFFCBD5E1), RoundedCornerShape(8.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.Person, contentDescription = null, tint = secondaryTextColor, modifier = Modifier.size(36.dp))
+                    Icon(Icons.Rounded.Person, contentDescription = null, tint = secondaryTextColor, modifier = Modifier.size(32.dp))
                 }
 
                 // Fields
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(text = "نام: شهروند نمونه", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = textColor)
-                    Text(text = "نام خانوادگی: ایرانی", fontSize = 10.sp, fontWeight = FontWeight.Bold, color = textColor)
-                    Text(
-                        text = "کد ملی: $formatted",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Black,
-                        fontFamily = FontFamily.Monospace,
-                        color = Color(0xFF4F46E5)
-                    )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "نام:", fontSize = 9.sp, color = secondaryTextColor)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "شهروند نمونه", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = textColor)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "نام خانوادگی:", fontSize = 9.sp, color = secondaryTextColor)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "ایرانی", fontSize = 11.sp, fontWeight = FontWeight.Medium, color = textColor)
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(text = "کد ملی:", fontSize = 9.sp, color = secondaryTextColor)
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = formatted,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            fontFamily = FontFamily.Monospace,
+                            color = if (isDarkMode) Color(0xFF818CF8) else Color(0xFF4F46E5)
+                        )
+                    }
                 }
             }
 
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
-                Text(text = "محل صدور: ${cityOfIssue ?: "---"}", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = textColor)
-                Text(text = "تاریخ انقضا: ۱۴۱۵/۰۴", fontSize = 8.sp, fontFamily = FontFamily.Monospace, color = textColor.copy(alpha = 0.6f))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "محل صدور:", fontSize = 9.sp, color = secondaryTextColor)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = cityOfIssue ?: "---", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if(isDarkMode) Color(0xFFCBD5E1) else Color(0xFF475569))
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(text = "تاریخ انقضا:", fontSize = 9.sp, color = secondaryTextColor)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(text = "۱۴۱۵/۰۴", fontSize = 9.sp, fontFamily = FontFamily.Monospace, color = if(isDarkMode) Color(0xFFCBD5E1) else Color(0xFF475569))
+                }
             }
         }
     }
@@ -1084,64 +1126,74 @@ fun ShabaEmulator(cleanInput: String, bankInfo: BankInfo?, hasIrPrefix: Boolean,
     val formatted = "IR${displayNum.substring(0,2)} ${displayNum.substring(2,6)} ${displayNum.substring(6,10)} ${displayNum.substring(10,14)} ${displayNum.substring(14,18)} ${displayNum.substring(18,22)} ${displayNum.substring(22,24)}"
 
     val shabaBg = if (isDarkMode) {
-        Brush.linearGradient(colors = listOf(Color(0xFF065F46), Color(0xFF064E3B)))
+        Brush.linearGradient(colors = listOf(Color(0xFF0F172A), Color(0xFF022C22)))
     } else {
-        Brush.linearGradient(colors = listOf(Color(0xFFECFDF5), Color(0xFFD1FAE5), Color(0xFFA7F3D0)))
+        Brush.linearGradient(colors = listOf(Color(0xFFECFDF5), Color(0xFFCCFBF1)))
     }
-    val textColor = if (isDarkMode) Color.White else Color(0xFF064E3B)
+    val textColor = if (isDarkMode) Color.White else Color(0xFF1E293B)
+    val secondaryTextColor = if (isDarkMode) Color(0xFF94A3B8) else Color(0xFF64748B)
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(max = 200.dp)
             .aspectRatio(1.586f)
+            .shadow(12.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(shabaBg)
-            .border(1.dp, if (isDarkMode) Color(0xFF047857) else Color(0xFF6EE7B7), RoundedCornerShape(20.dp))
-            .padding(16.dp)
-            .shadow(6.dp, RoundedCornerShape(20.dp))
+            .border(1.dp, if (isDarkMode) Color(0xFF064E3B).copy(alpha=0.4f) else Color(0xFFA7F3D0), RoundedCornerShape(20.dp))
     ) {
-        Column(modifier = Modifier.fillMaxSize(), verticalArrangement = Arrangement.SpaceBetween) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        // Right accent line
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .fillMaxHeight()
+                .width(8.dp)
+                .background(Color(0xFF10B981).copy(alpha = 0.2f))
+        )
+        
+        Column(modifier = Modifier.fillMaxSize().padding(20.dp).padding(end = 8.dp), verticalArrangement = Arrangement.SpaceBetween) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
                 Column {
-                    Text("حواله پایا و ساتنا (شبا)", fontSize = 8.sp, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.7f))
-                    Text(bankInfo?.let { "حساب بانک ${it.bankName}" } ?: "بانک صادرکننده شبا ناشناس", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = textColor)
+                    Text("حواله پایا و ساتنا (شبا)", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if(isDarkMode) Color(0xFF34D399) else Color(0xFF059669))
+                    Text(bankInfo?.bankName ?: "بانک صادرکننده شبا ناشناس", fontSize = 11.sp, fontWeight = FontWeight.Bold, color = if(isDarkMode) Color(0xFFCBD5E1) else Color(0xFF475569))
                 }
                 Box(
                     modifier = Modifier
-                        .size(32.dp)
+                        .size(28.dp)
                         .clip(RoundedCornerShape(8.dp))
-                        .background(if (isDarkMode) Color(0xFF064E3B) else Color.White.copy(alpha = 0.6f))
+                        .background(Color(0xFF10B981).copy(alpha = 0.1f))
+                        .border(1.dp, Color(0xFF10B981).copy(alpha = 0.2f), RoundedCornerShape(8.dp))
                         .padding(4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     if (bankInfo?.logoResId != null) {
                         Image(painter = painterResource(id = bankInfo.logoResId), contentDescription = null, modifier = Modifier.fillMaxSize())
                     } else {
-                        Icon(Icons.Rounded.AccountBalance, contentDescription = null, tint = textColor)
+                        Icon(Icons.Rounded.AccountBalance, contentDescription = null, tint = if(isDarkMode) Color(0xFF34D399) else Color(0xFF059669))
                     }
                 }
             }
 
-            Column {
-                Text("شناسه بین‌المللی حساب بانکی (IBAN):", fontSize = 7.sp, color = textColor.copy(alpha = 0.6f))
-                Spacer(modifier = Modifier.height(4.dp))
+            Column(modifier = Modifier.padding(vertical = 4.dp)) {
+                Text("شناسه بین‌المللی حساب بانکی (IBAN):", fontSize = 8.sp, color = secondaryTextColor)
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = formatted,
                     fontFamily = FontFamily.Monospace,
-                    fontWeight = FontWeight.Black,
+                    fontWeight = FontWeight.ExtraBold,
                     fontSize = 12.sp,
-                    color = textColor,
-                    letterSpacing = 0.5.sp
+                    color = if(isDarkMode) Color(0xFFE2E8F0) else Color(0xFF334155),
+                    letterSpacing = 1.5.sp
                 )
             }
 
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Bottom) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     Box(modifier = Modifier.size(6.dp).background(Color(0xFF10B981), CircleShape))
-                    Text("تراکنش امن شتابی", fontSize = 7.sp, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.6f))
+                    Text("تراکنش امن شتابی", fontSize = 9.sp, fontWeight = FontWeight.Bold, color = if(isDarkMode) Color(0xFF34D399) else Color(0xFF059669))
                 }
-                Text("کشور صادر کننده: ایران (IR)", fontSize = 7.sp, fontWeight = FontWeight.Bold, color = textColor.copy(alpha = 0.6f))
+                Text("مبلغ تست: نامحدود", fontSize = 8.sp, fontFamily = FontFamily.Monospace, color = secondaryTextColor)
             }
         }
     }
@@ -1246,6 +1298,7 @@ fun BulkValidationTab(
                     value = bulkInput,
                     onValueChange = onBulkInputChange,
                     placeholder = { Text("شماره کارت‌ها، شباها یا کدهای ملی را هر کدام در یک خط قرار دهید...", fontSize = 12.sp, lineHeight = 18.sp) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     textStyle = LocalTextStyle.current.copy(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,
