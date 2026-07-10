@@ -36,4 +36,8 @@ class CityRepository(private val context: Context) {
         val prefix = nationalId.substring(0, 3)
         return cityMap[prefix] ?: "کد شهر ناشناخته"
     }
+
+    fun getAllCities(): Map<String, String> {
+        return cityMap
+    }
 }

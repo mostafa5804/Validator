@@ -56,6 +56,16 @@ class MainViewModel(
         _state.update { it.copy(type = type, input = "", isValid = null, bankInfo = null, city = null, message = "", isLoading = false) }
     }
 
+    fun forceValidate() {
+        val sanitized = _state.value.input
+        validationJob?.cancel()
+        validationJob = viewModelScope.launch {
+            _state.update { it.copy(isLoading = true) }
+            delay(100)
+            validate(sanitized, _state.value.type)
+        }
+    }
+
     fun onInputChanged(input: String) {
         val sanitized = input.uppercase().replace("IR", "").replace(Regex("[^0-9]"), "")
         _state.update { it.copy(input = sanitized, isValid = null, bankInfo = null, city = null, message = "", isLoading = false) }
