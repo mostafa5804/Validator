@@ -3,8 +3,8 @@ name: Android CI/CD & Auto Release 🚀
 on:
   push:
     tags:
-      - 'v*' # Triggers workflow when pushing a tag like v1.0.0
-  workflow_dispatch: # Allows manual trigger from the GitHub Actions tab
+      - 'v*'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Required for creating GitHub Releases
+      contents: write
 
     steps:
       - name: Checkout Code 📂
@@ -25,7 +25,9 @@ jobs:
             base64 -d debug.keystore.base64 > debug.keystore
             echo "✅ Debug keystore decoded."
           else
-            echo "ℹ️ debug.keystore.base64 not found. Using default debug keystore."
+            echo "ℹ️ debug.keystore.base64 not found. Creating default debug.keystore..."
+            keytool -genkey -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US"
+            echo "✅ Default debug.keystore created."
           fi
 
       - name: Decode Release Keystore 🔑
@@ -48,7 +50,7 @@ jobs:
       - name: Setup Gradle ⚙️
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          gradle-version: '9.3.1'
           validate-wrappers: false
 
       - name: Build Debug/Release APKs & Bundle (AAB) 🛠️
@@ -58,10 +60,10 @@ jobs:
           STORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
 
-      - name: Upload Build Artifacts to Actions Tab 📥
+      - name: Upload Build Artifacts 📥
         uses: actions/upload-artifact@v4
         with:
-          name: ParsValidator-Release-Outputs
+          name: BuildReportYar-Release-Outputs
           path: |
             app/build/outputs/apk/debug/*.apk
             app/build/outputs/apk/release/*.apk
